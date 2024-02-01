@@ -45,7 +45,7 @@ class OnMessage(commands.Cog):
             pass
         
         media, msg = parseUrl(baseUrl)
-        await message.reply(msg, file=media)
+        await message.reply(msg, files=media)
         
 def setup(bot : discord.Bot) -> None:
     bot.add_cog(OnMessage(bot))
