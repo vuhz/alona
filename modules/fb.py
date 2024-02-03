@@ -33,21 +33,14 @@ class Facebook:
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0', 
         'Viewport-Width': '628'
     }
-    
-    @classmethod
-    def work(cls, url, result, index):
-        # This function created for threading
-        content =cls.session_.get(url = url, headers = cls.baseHeaders)
-        url_ = json.loads('"' + re.search(r'"image":{"uri":"(([^\\"]|\\.)*)"', content.text).group(1).replace("\\/","/") + '"')
-        result[index] = url_
 
-    @classmethod
-    def work2(cls, url, extension, result, index):
-        # This function created for threading
-        # Get content from url, convert to binary stream (will be kept in memory buffer) then convert to discord file.
-        file=discord.File(io.BytesIO(requests.get(url).content), f"abc{extension}")
-        result[index] = file
-
+    def returnUrl(cls, url):
+        session = cls.session_
+        result = session.get(
+            url, headers=cls.baseHeaders
+        ).url
+        return result
+            
     def parseVidUrl(html):
         # Find HD/SD content direct url using regex (stored in page html)
         # Skip if either HD/SD url is "null"
@@ -81,7 +74,7 @@ class Facebook:
         for i in [urlHD, urlSD]:
             if i != "":
                 return i
-            
+        
     @classmethod
     def parseAttachments(cls, html):
         attList = []
@@ -89,7 +82,7 @@ class Facebook:
         z=[]
         url = ""
         attL_ = ""
-        urlPattern = r'https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&\/\/=]*)'
+        urlPattern = r'^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&\/\/=]*)'
 
         idPost = re.search(r'"post_id":"(\d+)"', html)
 
@@ -104,10 +97,11 @@ class Facebook:
             if i:
                 a = i.group(1)
                 attL_ += a
-
-        if att3:
+        
+        # if att3 found, and not any att1 or att2 found
+        if att3 and not any([att1, att2]):
             attL_ += att3.group(1).replace("\\/","/")
-
+        
         for i in [vid1, vid2]:
             if i:
                 
@@ -124,6 +118,8 @@ class Facebook:
             threads = [None] * len(b)
             results = [None] * len(b)
             for j, i in enumerate(b):
+                if i is None:
+                    continue
                 if re.search(urlPattern, i):
                     attList.append(i)
                 else:
@@ -136,17 +132,29 @@ class Facebook:
 
             attList += results
         return attList
-        
-    def returnUrl(cls, url):
-        session = cls.session_
-        result = session.get(
-            url, headers=cls.baseHeaders
-        ).url
-        return result
+    
+    @classmethod
+    def work(cls, url, result, index):
+        # This function created for threading
+        content =cls.session_.get(url = url, headers = cls.baseHeaders)
+        url_ = json.loads('"' + re.search(r'"image":{"uri":"(([^\\"]|\\.)*)"', content.text).group(1).replace("\\/","/") + '"')
+        result[index] = url_
+
+    @classmethod
+    def work2(cls, url, extension, result, index):
+        # This function created for threading
+        # Get content from url, convert to binary stream (will be kept in memory buffer) then convert to discord file.
+        file=discord.File(io.BytesIO(requests.get(url).content), f"abc{extension}")
+        result[index] = file
 
     @classmethod
     def getDirectUrl(cls, url):
-        url_ = requests.get(url = url, headers = cls.baseHeaders).text
+
+        if re.search(r"m\.facebook.+", url):
+            url = url.replace("m.facebook", "www.facebook")
+        
+        url_ = requests.get(url = url, headers = cls.baseHeaders).url
+
         if "login" in url_:
             url_ = urllib.parse.unquote(re.search(r'next=(.+)', url_).group(1))
             url = url_
@@ -159,18 +167,21 @@ class Facebook:
     
     @classmethod
     def facebook(cls, url):
+        
         session = cls.session_
         result = session.get(
-            url, headers = cls.baseHeaders
+            cls.getDirectUrl(url), headers = cls.baseHeaders
         )
         attList = cls.parseAttachments(result.text)
         hasMsg = re.search(r'"message":{"text":"(([^\\"]|\\.)*)"', result.text)
         msg = json.loads('"' + hasMsg.group(1) + '"') if hasMsg and hasMsg.group(1) != "Explore more in Video" else ""
 
+        attList = [item for item in attList if item is not None]
         threads = [None] * len(attList)
         files = [None] * len(attList)
         for i, item in enumerate(attList):
-            
+            if item is None:
+                continue
             extension = re.search(r'(.+)(\.png|\.webp|\.jpg|\.gif)', item)
             extension_vid = re.search(r'(.+)(\.mp4|\.mov)', item)
             if extension:
@@ -186,8 +197,7 @@ class Facebook:
         
         #files: list of Discord file
         #msg: text in post, return "" if message is none
-        print(files, msg)
         return files, msg
     
     
-# Facebook.facebook("https://www.facebook.com/watch?v=1157534891892122")
+# Facebook.facebook("https://www.facebook.com/share/p/aRr2nU3RmgDTzR37/?mibextid=WC7FNe")
