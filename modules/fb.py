@@ -164,7 +164,23 @@ class Facebook:
             url = url_
 
         return url if url else None
-    
+
+    @classmethod
+    def cleanMSG(cls, msg):
+        flag = ["*", "_", "**", "~~", "||"]
+        for i, f in enumerate(flag):
+            if f in msg:
+                if i == 2:
+                    c = "\\*\\*"
+                elif i == 3:
+                    c = "\\~\\~"
+                elif i == 4:
+                    c = "\\|\\|"
+                else:
+                    c = f"\\{f}"
+                msg = msg.replace(f, c)
+        return msg
+
     @classmethod
     def facebook(cls, url):
         
@@ -172,9 +188,14 @@ class Facebook:
         result = session.get(
             cls.getDirectUrl(url), headers = cls.baseHeaders
         )
+        print(result.url)
         attList = cls.parseAttachments(result.text)
         hasMsg = re.search(r'"message":{"text":"(([^\\"]|\\.)*)"', result.text)
         msg = json.loads('"' + hasMsg.group(1) + '"') if hasMsg and hasMsg.group(1) != "Explore more in Video" else ""
+        msg = cls.cleanMSG(msg)
+
+        # Discord message length limit = 2000
+        msg = msg[:1800] + f"... [View more]({url})" if len(msg) > 1950 else msg
 
         attList = [item for item in attList if item is not None]
         threads = [None] * len(attList)
@@ -197,6 +218,7 @@ class Facebook:
         
         #files: list of Discord file
         #msg: text in post, return "" if message is none
+        # print(files, msg)
         return files, msg
     
     
