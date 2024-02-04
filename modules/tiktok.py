@@ -71,5 +71,5 @@ class Tiktok:
         media_url = cls.getDirectMedia(res.text)
         content = cls.get_content_media(media_url)
 
-        file = discord.File(content, f"abc.mp4")
+        file = [discord.File(content, f"abc.mp4")]
         return file
