@@ -13,7 +13,7 @@ def parseUrl(url : str) -> (discord.File, str):
 
         insta = r"https?:\/\/(www\.)?instagram.*"
         fb = r"https?:\/\/(www\.|m\.)?facebook.*"
-        tiktok = r"https?:\/\/(www\.)?tiktok.*"
+        tiktok = r"https?:\/\/(www\.|vt\.)?tiktok.*"
 
         rsInsta = re.search(insta, url)
         rsFb = re.search(fb, url)
