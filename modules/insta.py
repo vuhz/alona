@@ -73,7 +73,7 @@ class Instagram():
     def insta(cls, url) -> discord.File:
         code = cls.getCode(url)
         url = cls.getUrl(code)
-        file = discord.File(io.BytesIO(requests.get(url).content), f"abc.mp4")
+        file = [discord.File(io.BytesIO(requests.get(url).content), f"abc.mp4")]
 
         return file
     
