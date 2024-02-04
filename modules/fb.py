@@ -103,10 +103,14 @@ class Facebook:
         if att3 and not any([att1, att2]):
             attL_ += att3.group(1).replace("\\/","/")
         
-        for i in [vid1, vid2, vid3]:
-            if i:
-                attList.append(cls.parseVidUrl(html))
-                z = re.findall(r'(\d+)', i.group(1))
+        if not any([vid1, vid2]):
+            attList.append(cls.parseVidUrl(html))
+            z = re.findall(r'(\d+)', vid3.group(1))
+        else:
+            for i in [vid1, vid2]:
+                if i:
+                    attList.append(cls.parseVidUrl(html))
+                    z = re.findall(r'(\d+)', i.group(1))
 
         b = [elem for elem in re.findall(r'(\d+)', attL_) if elem not in z]
         
