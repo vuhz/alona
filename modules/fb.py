@@ -92,7 +92,8 @@ class Facebook:
 
         vid1 = re.search(r'\\"video_id\\":\[([^\]]+)', html)
         vid2 = re.search(r'\\"video_id\\":\\([^\]^,]+)', html)
-
+        vid3 = re.search(r'"video_id":"(\d+)"', html)
+        
         for i in [att1, att2]:
             if i:
                 a = i.group(1)
@@ -102,9 +103,8 @@ class Facebook:
         if att3 and not any([att1, att2]):
             attL_ += att3.group(1).replace("\\/","/")
         
-        for i in [vid1, vid2]:
+        for i in [vid1, vid2, vid3]:
             if i:
-                
                 attList.append(cls.parseVidUrl(html))
                 z = re.findall(r'(\d+)', i.group(1))
 
@@ -166,19 +166,17 @@ class Facebook:
         return url if url else None
 
     @classmethod
-    def cleanMSG(cls, msg):
-        flag = ["*", "_", "**", "~~", "||"]
-        for i, f in enumerate(flag):
-            if f in msg:
-                if i == 2:
-                    c = "\\*\\*"
-                elif i == 3:
-                    c = "\\~\\~"
-                elif i == 4:
-                    c = "\\|\\|"
-                else:
-                    c = f"\\{f}"
-                msg = msg.replace(f, c)
+    def cleanMSG(cls, msg : str):
+        # lol
+        replacements = {
+            "*": r"\*",
+            "_": r"\_",
+            "**": r"\*\*",
+            "~~": r"\~\~",
+            "||": r"\|\|"
+        }
+        for key, value in replacements.items():
+            msg = msg.replace(key, value)
         return msg
 
     @classmethod
@@ -188,7 +186,7 @@ class Facebook:
         result = session.get(
             cls.getDirectUrl(url), headers = cls.baseHeaders
         )
-        print(result.url)
+        # get html
         attList = cls.parseAttachments(result.text)
         hasMsg = re.search(r'"message":{"text":"(([^\\"]|\\.)*)"', result.text)
         msg = json.loads('"' + hasMsg.group(1) + '"') if hasMsg and hasMsg.group(1) != "Explore more in Video" else ""
